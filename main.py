@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
 
     options = {
-        'bind': '0.0.0.0:5000',
+        'bind': '0.0.0.0:8000',
         'workers': 3,
         'threads': 32,
         'worker_class': 'uvicorn.workers.UvicornWorker',

@@ -38,10 +38,9 @@ class AsyncRedis:
 
 
 class SubChannel:
-    def __init__(self, redis: AsyncRedis, handleFunc, channel='message_channel_http'):
+    def __init__(self, redis: AsyncRedis, channel='message_channel_http'):
         self.channel = self.get_channel(channel)
         self.redis = redis
-        asyncio.get_event_loop().create_task(self._sub_listen(handleFunc))
 
     def get_channel(self, channel):
         return self.__class__.__name__ + ":" + channel
@@ -70,7 +69,6 @@ class SubChannel:
             except Exception as e:
                 print(e)
                 await asyncio.sleep(1)
-        print('sub listen out')
 
     async def publish_msg(self, data):
         self.redis = await self.redis.get_redis()
@@ -90,13 +88,14 @@ class WebsocketPool(SubChannel):
         del self.connections[key]
 
     async def send_message(self, key, data):
-        await self.connections[key].send(data)
+        await self.connections[key].send_json(data)
 
     async def message_handle(self, data):
         await self.send_message(data['key'], data['data'])
 
     def __init__(self, redis: AsyncRedis):
-        super().__init__(redis=redis, handleFunc=self.message_handle)
+        super().__init__(redis=redis)
+        asyncio.get_event_loop().create_task(self._sub_listen(self.message_handle))
 
 
 ws_pool = WebsocketPool(AsyncRedis('127.0.0.1', 6379, '', 0))
