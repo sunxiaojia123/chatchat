@@ -58,8 +58,8 @@ class SubChannel:
             try:
                 print('sub listen while')
                 k1, k2, data = await self.pubsub.parse_response()
-                data = json.loads(data)
                 print("_sub_listen", k1, k2, data)
+                data = json.loads(data)
                 await handleFunc(data)
             except (aioredis.ConnectionError, aioredis.TimeoutError):
                 await self._pub_sub_init()

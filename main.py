@@ -46,7 +46,7 @@ class WebsocketConnection(object):
     async def msg_loop(self):
         async for msg in self.get_msgs():
             try:
-                await self.websocket.send_json(msg)
+                # await self.websocket.send_json(msg)
                 await ws_pool.publish_msg(msg)
             except Exception as e:
                 print(e)
