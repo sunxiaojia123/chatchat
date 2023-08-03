@@ -57,9 +57,9 @@ class SubChannel:
         while True:
             try:
                 print('sub listen while')
-                _, _, data = await self.pubsub.parse_response()
+                k1, k2, data = await self.pubsub.parse_response()
                 data = json.loads(data)
-                print(data)
+                print("_sub_listen", k1, k2, data)
                 await handleFunc(data)
             except (aioredis.ConnectionError, aioredis.TimeoutError):
                 await self._pub_sub_init()
@@ -79,7 +79,10 @@ class SubChannel:
 
 
 class WebsocketPool(SubChannel):
-    connections = {}
+
+    def __init__(self, redis: AsyncRedis):
+        self.connections = {}
+        super().__init__(redis=redis)
 
     def add_connection(self, key, websocket):
         self.connections[key] = websocket
@@ -93,9 +96,5 @@ class WebsocketPool(SubChannel):
     async def message_handle(self, data):
         await self.send_message(data['key'], data['data'])
 
-    def __init__(self, redis: AsyncRedis):
-        super().__init__(redis=redis)
-        asyncio.get_event_loop().create_task(self._sub_listen(self.message_handle))
-
-
-ws_pool = WebsocketPool(AsyncRedis('127.0.0.1', 6379, '', 0))
+    async def start_listening(self):
+        await self._sub_listen(self.message_handle)

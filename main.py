@@ -1,6 +1,10 @@
+import asyncio
+import uvloop
 from fastapi import FastAPI
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.middleware.cors import CORSMiddleware
+
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 app = FastAPI()
 
@@ -13,12 +17,17 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def _init():
+    global ws_pool
+    from util.cache import WebsocketPool, AsyncRedis
+    ws_pool = WebsocketPool(AsyncRedis('127.0.0.1', 6379, '', 0))
+    asyncio.get_event_loop().create_task(ws_pool.start_listening())
+
+
 @app.get("/health")
 def read_root():
     return {"health": "ok"}
-
-
-from util.cache import ws_pool
 
 
 class WebsocketConnection(object):
@@ -37,6 +46,7 @@ class WebsocketConnection(object):
     async def msg_loop(self):
         async for msg in self.get_msgs():
             try:
+                await self.websocket.send_json(msg)
                 await ws_pool.publish_msg(msg)
             except Exception as e:
                 print(e)
