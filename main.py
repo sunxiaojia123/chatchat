@@ -1,7 +1,7 @@
 import asyncio
 import uvloop
-from fastapi import FastAPI
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Body
+from fastapi import WebSocket
 from starlette.middleware.cors import CORSMiddleware
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -57,6 +57,19 @@ async def websocket_endpoint(websocket: WebSocket, user_id):
     await websocket.accept()
     conn = WebsocketConnection(websocket, user_id)
     await conn.msg_loop()
+
+
+@app.post("/mag")
+async def send_msg(
+        key: str = Body(...),
+        data: str | dict = Body(...)
+):
+    msg = {
+        "key": key,
+        "data": data
+    }
+    await ws_pool.publish_msg(msg)
+    return {"status": "ok"}
 
 
 if __name__ == "__main__":
