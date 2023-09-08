@@ -20,7 +20,7 @@ app.add_middleware(
 @app.on_event("startup")
 def _init():
     global ws_pool
-    from util.cache import WebsocketPool, AsyncRedis
+    from ws_pool import WebsocketPool, AsyncRedis
     ws_pool = WebsocketPool(AsyncRedis('127.0.0.1', 6379, '', 0))
     asyncio.get_event_loop().create_task(ws_pool.start_listening())
 
@@ -62,7 +62,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id):
 @app.post("/mag")
 async def send_msg(
         key: str = Body(...),
-        data: str | dict = Body(...)
+        data: any = Body(...)
 ):
     msg = {
         "key": key,
@@ -73,30 +73,6 @@ async def send_msg(
 
 
 if __name__ == "__main__":
-    from gunicorn.app.base import BaseApplication
+    import uvicorn
 
-
-    class GunicornApp(BaseApplication):
-        def __init__(self, app, options=None):
-            self.application = app
-            self.options = options or {}
-            super().__init__()
-
-        def load_config(self):
-            config = {key: value for key, value in self.options.items()
-                      if key in self.cfg.settings and value is not None}
-            for key, value in config.items():
-                self.cfg.set(key.lower(), value)
-
-        def load(self):
-            return self.application
-
-
-    options = {
-        'bind': '0.0.0.0:8000',
-        'workers': 3,
-        'threads': 32,
-        'worker_class': 'uvicorn.workers.UvicornWorker',
-        'timeout': 60 * 5,
-    }
-    GunicornApp(app, options).run()
+    uvicorn.run(app="main:app", host="0.0.0.0", port=8000, workers=3, loop="uvloop")
